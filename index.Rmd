@@ -1,9 +1,10 @@
 --- 
-title: "YOUR TITLE HERE"
-author: "YOUR NAMES HERE"
+title: "Analysis of Asian-American Quality of Life"
+author: "Gokul Sunilkumar & Pooja Srinivasan"
 date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
 ---
 
 # Introduction
+
 
