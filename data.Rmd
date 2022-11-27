@@ -28,7 +28,6 @@ data <- data[, -which(names(data) %in% c("Survey ID"))]
 ```{r}
 # Checking correlation among columns
 unique_df <-  drop_na(data)
-cor(data[sapply(data,is.numeric)])
 ```
 
 ```{r}
@@ -44,7 +43,7 @@ unique_df <- unique_df %>%
   mutate(
     # Create categories
     Age_Group = dplyr::case_when(
-      Age <= 25            ~ "0-25",
+      Age <= 25            ~ "18-25",
       Age > 25 & Age <= 50 ~ "26-50",
       Age > 50 & Age <= 75 ~ "51-75",
       Age > 75             ~ "> 75"
@@ -52,7 +51,7 @@ unique_df <- unique_df %>%
     # Convert to factor
     Age_Group = factor(
       Age_Group,
-      level = c("0-25", "26-50","51-75", "> 75")
+      level = c("18-25", "26-50","51-75", "> 75")
     )
   )
 ```
@@ -97,9 +96,29 @@ unique_df_encoded$`Close Blood Relation` <- unique_df_encoded$Spouse + unique_df
 
 unique_df_encoded$`Others` <- unique_df_encoded$`Other Relative`+ unique_df_encoded$`Friends`+ unique_df_encoded$`Other...17`
 
-unique_df_encoded$`No One`
+
+plot1 <- pivot_longer(unique_df_encoded, cols = c("Close Blood Relation", "Others", "No One"), names_to = "living_with" , values_to = "no_of_people")
 
 ```
 
+
+```{r}
+plot1 <- subset(plot1, no_of_people != 0 )
+
+
+counts1 <- plot1[c("living_with", "Age_Group", "Present Mental Health")] %>% group_by(living_with, Age_Group, `Present Mental Health`) %>% 
+  summarise(Freq = n()) %>% 
+  ungroup() %>% 
+  complete(Age_Group, living_with, `Present Mental Health`, fill = list(Freq = 0))
+
+names(counts1) <- c("Age_Group", "living_with", "PresentMentalHealth", "Freq")
+
+counts1$Age_Group = factor(counts1$Age_Group, levels = c("18-25", "26-50", "51-75", "> 75"))
+mosaic(PresentMentalHealth ~ Age_Group + living_with , data = counts1, direction = c("v", "v", "h"), spacing = spacing_highlighting())
+
+
+
+
+```
 
 
