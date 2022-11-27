@@ -1,8 +1,105 @@
+```{r}
+library(tidyverse)
+library(skimr)
+library(corrplot)
+library(vcd)
+```
+
 # Data 
+
+```{r}
+data <- read_csv(here::here("data", "data.csv"))
+skim(data)
+```
 
 ## Sources
 
 ## Cleaning / transformation
 
 ## Missing value analysis
+
+```{r}
+# Drop columns that have more than 40% NA values
+data <- data[, which(colMeans(!is.na(data)) > 0.40)]
+# Dropping "Survey ID" column
+data <- data[, -which(names(data) %in% c("Survey ID"))]
+```
+
+```{r}
+# Checking correlation among columns
+unique_df <-  drop_na(data)
+cor(data[sapply(data,is.numeric)])
+```
+
+```{r}
+# Finding the number of missing values in each column
+data %>% 
+  select(everything()) %>% 
+  summarise_all(funs(sum(is.na(.))))
+```
+
+
+```{r}
+unique_df <- unique_df %>% 
+  mutate(
+    # Create categories
+    Age_Group = dplyr::case_when(
+      Age <= 25            ~ "0-25",
+      Age > 25 & Age <= 50 ~ "26-50",
+      Age > 50 & Age <= 75 ~ "51-75",
+      Age > 75             ~ "> 75"
+    ),
+    # Convert to factor
+    Age_Group = factor(
+      Age_Group,
+      level = c("0-25", "26-50","51-75", "> 75")
+    )
+  )
+```
+
+```{r}
+# Finding columns with unique values (0, "text") and replaing "text" with 1
+find_and_encode <- function(column) {
+  if(is.character(column)) {
+    unique_column <- unique(unlist(as.list(column), use.names = FALSE))
+    if(length(unique_column) == 2 & sort(unique_column)[1] == "0") {
+      column <- replace(column, column != "0", "1")
+      class(column) = "numeric"
+      return(column)
+    }
+  }
+  return(column)
+}
+
+# This data frame consists of columns with unique values (0, "text") encoded as (0, 1)
+unique_df_encoded <- apply(unique_df, 2, find_and_encode)
+
+# Converting it from a matrix to a dataframe form
+unique_df_encoded <- as.data.frame(unique_df_encoded)
+
+```
+
+```{r}
+cols1 <- c("No One", "Spouse", "Children", "Grand Children", "Parent", "Grandparent", "Brother/Sister", "Other Relative", "Friends",
+           "Other...17")
+cols2 <- c("Full Time Employment", "Part Time Employment", "Self Employed Full Time", "Self Employed Part Time", "Student",                  
+           "Homemaker", "Disabled", "Unemployed", "Retired", "Other Employement")
+
+unique_df_encoded[,cols1] <- lapply(unique_df_encoded[,cols1] , as.numeric)
+
+```
+
+
+
+```{r}
+unique_df_encoded$`Close Blood Relation` <- unique_df_encoded$Spouse + unique_df_encoded$Children + unique_df_encoded$`Grand Children` + 
+  unique_df_encoded$Parent+ unique_df_encoded$Grandparent + unique_df_encoded$`Brother/Sister` 
+
+unique_df_encoded$`Others` <- unique_df_encoded$`Other Relative`+ unique_df_encoded$`Friends`+ unique_df_encoded$`Other...17`
+
+unique_df_encoded$`No One`
+
+```
+
+
 
