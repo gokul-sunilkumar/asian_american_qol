@@ -1,1 +1,450 @@
-# Results
+```{r}
+knitr::opts_chunk$set(
+  comment = "#>", echo = FALSE, fig.width = 10, fig.height = 10)
+```
+
+```{r}
+library(tidyverse)
+library(skimr)
+library(corrplot)
+library(vcd)
+library(extracat)
+library(GGally)
+library(ggalluvial)
+library(scales)
+```
+
+# Data 
+
+```{r}
+data <- read_csv(here::here("data", "data.csv"))
+skim(data)
+```
+
+## Sources
+
+## Cleaning / transformation
+
+## Missing value analysis
+
+```{r}
+# Drop columns that have more than 40% NA values
+data1 <- data.frame(data)
+data1 <- data1[, which(colMeans(!is.na(data)) > 0.40)]
+# Dropping "Survey ID" column
+data1 <- data1[, -which(names(data) %in% c("Survey ID"))]
+```
+
+
+```{r}
+# Finding the number of missing values in each column
+data %>% 
+  select(everything()) %>% 
+  summarise_all(funs(sum(is.na(.))))
+```
+
+```{r}
+unique_df1 <-  drop_na(data1)
+```
+
+
+```{r}
+unique_df_mosaic <- unique_df1 %>% 
+  mutate(
+    # Create categories
+    Age_Group = dplyr::case_when(
+      Age <= 25            ~ "18-25",
+      Age > 25 & Age <= 50 ~ "26-50",
+      Age > 50 & Age <= 75 ~ "51-75",
+      Age > 75             ~ "> 75"
+    ),
+    # Convert to factor
+    Age_Group = factor(
+      Age_Group,
+      level = c("18-25", "26-50","51-75", "> 75")
+    )
+  )
+
+unique_df_rest <- data %>% 
+  mutate(
+    # Create categories
+    Age_Group = dplyr::case_when(
+      Age <= 25            ~ "18-25",
+      Age > 25 & Age <= 50 ~ "26-50",
+      Age > 50 & Age <= 75 ~ "51-75",
+      Age > 75             ~ "> 75"
+    ),
+    # Convert to factor
+    Age_Group = factor(
+      Age_Group,
+      level = c("18-25", "26-50","51-75", "> 75")
+    )
+  )
+```
+
+```{r}
+unique_df2 <-  unique_df_rest %>% drop_na("Ethnicity", "Age_Group")
+```
+
+```{r}
+# Finding columns with unique values (0, "text") and replaing "text" with 1
+find_and_encode <- function(column) {
+  if(is.character(column)) {
+    unique_column <- unique(unlist(as.list(column), use.names = FALSE))
+    if(length(unique_column) == 2 & sort(unique_column)[1] == "0") {
+      column <- replace(column, column != "0", "1")
+      class(column) = "numeric"
+      return(column)
+    }
+  }
+  return(column)
+}
+
+# This data frame consists of columns with unique values (0, "text") encoded as (0, 1)
+unique_df_encoded2 <- apply(unique_df2, 2, find_and_encode)
+unique_df_encoded1 <- apply(unique_df_mosaic, 2, find_and_encode)
+
+# Converting it from a matrix to a dataframe form
+unique_df_encoded1 <- as.data.frame(unique_df_encoded1)
+unique_df_encoded2 <- as.data.frame(unique_df_encoded2)
+
+```
+
+```{r}
+cols1 <- c("No.One", "Spouse", "Children", "Grand.Children", "Parent", "Grandparent", "Brother.Sister", "Other.Relative", "Friends",
+           "Other...17")
+cols2 <- c("Full Time Employment", "Part Time Employment", "Self Employed Full Time", "Self Employed Part Time", "Student",                  
+           "Homemaker", "Disabled", "Unemployed", "Retired", "Other Employement")
+
+unique_df_encoded1[,cols1] <- lapply(unique_df_encoded1[,cols1] , as.numeric)
+
+```
+
+
+
+```{r}
+unique_df_encoded1$`Close Blood Relation` <- unique_df_encoded1$Spouse + unique_df_encoded1$Children + unique_df_encoded1$`Grand.Children` + 
+  unique_df_encoded1$Parent+ unique_df_encoded1$Grandparent + unique_df_encoded1$`Brother.Sister` 
+
+unique_df_encoded1$`Others` <- unique_df_encoded1$`Other.Relative`+ unique_df_encoded1$`Friends`+ unique_df_encoded1$`Other...17`
+
+
+plot1 <- pivot_longer(unique_df_encoded1, cols = c("Close Blood Relation", "Others", "No.One"), names_to = "living_with" , values_to = "no_of_people")
+
+```
+
+
+```{r, fig.height=4, fig.width=9}
+# Plot 1
+plot1 <- subset(plot1, no_of_people != 0 )
+
+
+counts1 <- plot1[c("living_with", "Age_Group", "Present.Mental.Health")] %>% group_by(living_with, Age_Group, `Present.Mental.Health`) %>% 
+  summarise(Freq = n()) %>% 
+  ungroup() %>% 
+  complete(Age_Group, living_with, `Present.Mental.Health`, fill = list(Freq = 0))
+
+names(counts1) <- c("Age_Group", "living_with", "PresentMentalHealth", "Freq")
+
+counts1$Age_Group = factor(counts1$Age_Group, levels = c("18-25", "26-50", "51-75", "> 75"))
+counts1$PresentMentalHealth = factor(counts1$PresentMentalHealth, levels = c("Fair", "Good", "Very Good", "Excellent"))
+mosaic(PresentMentalHealth ~ Age_Group + living_with , data = counts1, direction = c("v", "v", "h"),
+       labeling_args = list(rot_labels = c(0, 90, 90, 0)),
+       labeling = labeling_border(abbreviate_labs = c(FALSE, 3, FALSE)))
+
+
+```
+
+```{r}
+# Plot 2
+
+# Plotting the stacked graph for overall age distribution of various ethnic groups(Push others to end)
+unique_df_encoded2$Age_Group <- factor(unique_df_encoded2$Age_Group, 
+                                      levels = c("18-25", "26-50", "51-75", "> 75"))
+
+ggplot(unique_df_encoded2, aes(Ethnicity)) + geom_bar(aes(fill=Age_Group), position = position_fill(reverse = TRUE)) + scale_y_continuous(labels=scales::percent)+ labs(y="Percentage distribution", x="Ethnicity", title = "Overall age distribution of various ethnic groups")+  scale_fill_viridis_d()+ guides(fill = guide_legend(reverse = TRUE))
+```
+
+```{r}
+# Plot 3
+df3 <- data %>% drop_na("Duration of Residency", "Income", "Occupation", "US Born")
+df3 <- subset(df3, Occupation != 0)
+df3$`Duration of Residency` <- as.numeric((df3$`Duration of Residency`))
+ggplot(df3, aes(x= `Duration of Residency`, y=Income, color=Occupation)) + geom_point() + facet_grid(~ `US Born`)+ggtitle("Distribution of income for diferent occupations based on US born and duration of residency")
+```
+
+
+```{r}
+# Plot 4
+cols4 <- c("Place to Live", "Raising Children", "Place to Work", "Small Businesses", "Place to Retire", 
+            "Arts and Culture", "Safety", "Traffic")
+
+df4 <- data %>% drop_na("Place to Live", "Raising Children", "Place to Work", "Small Businesses", "Place to Retire", 
+            "Arts and Culture", "Safety", "Traffic")
+
+plot4 <- pivot_longer(df4, cols = cols4, names_to = "Living_Criteria" , values_to = "Rating", values_drop_na = TRUE)
+
+plot4_summary <- plot4[c("Living_Criteria", "Rating")] %>% 
+  group_by(Living_Criteria, Rating) %>% 
+  count(name = 'n_ratings') %>% 
+  group_by(Living_Criteria) %>% 
+  mutate(percent_rating = n_ratings/sum(n_ratings)) %>% 
+  ungroup() %>% 
+  mutate(percentage_rating_label = percent(percent_rating, accuracy = 1))
+
+
+
+
+
+plot4_summary_diverging <- subset(plot4_summary, Rating != 33) %>%
+  mutate(percent_rating = if_else(Rating %in% c("Excellent", "Good"), percent_rating, -percent_rating)) %>% 
+  mutate(percent_rating_label = percent(percent_rating, accuracy = 1))
+
+plot4_summary_diverging_good_labels <- plot4_summary_diverging %>%
+  mutate(percent_rating_label = abs(percent_rating)) %>% 
+  mutate(percent_rating_label = percent(percent_rating_label, accuracy = 1))
+
+plot4_summary_diverging_right_order <- plot4_summary_diverging_good_labels %>% 
+  mutate(Rating = fct_relevel(Rating,
+                               "Fair", "Poor", "Good", "Excellent"),
+         Rating = fct_rev(Rating)) 
+
+plot4_summary_diverging_right_order %>%
+  ggplot(aes(x = Living_Criteria, 
+             y = percent_rating,
+             fill = Rating)) +
+  geom_col() +
+  geom_text(aes(label = percent_rating_label),
+            position = position_stack(vjust = 0.5),
+            color = "white",
+            fontface = "bold") +
+  coord_flip() +
+  scale_x_discrete() +
+  #scale_fill_viridis_d(breaks = c("Poor", "Fair", "Good", "Excellent")) +
+  scale_fill_manual(breaks = c("Poor", "Fair", "Good", "Excellent"),
+                    values = c(
+                      "Poor" = "darkorange3",
+                      "Fair" = "orange",
+                      "Good" = "deepskyblue",
+                      "Excellent" = "deepskyblue4"
+                    )) +
+  labs(title = "How good is Austin to live based on different living criteria?",
+       x = NULL,
+       fill = NULL) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        panel.grid = element_blank(),
+        legend.position = "top")
+
+```
+
+
+```{r, fig.width=10, fig.height=6}
+# Plot 5
+
+df5 <- data %>% drop_na("Housing", "Status of Ownership","Marital Status" )
+
+df5 <- df5[c("Marital Status","Housing", "Status of Ownership" )]
+
+df5 <- subset(df5, Housing!=6 & Housing!=5)
+df5 <- subset(df5, `Status of Ownership` != 3)
+
+fluctile(table(df5),just = "lb" ,tile.col = "red", bg.col = "black" ,tile.border = "yellow")
+
+
+```
+
+```{r,fig.height=4, fig.width=9}
+# Plot 6
+
+df6 <- data %>% drop_na('Family', 'Close Friend', 'Acquaintances', 'Gender', 'Satisfied With Life 1')
+cols6 <- c('Family', 'Close Friend', 'Acquaintances')
+
+plot6 <- pivot_longer(df6, cols = cols6, names_to = "Relationship" , values_to = "Yes/No")
+
+plot6$`Satisfied With Life 1` <- factor(plot6$`Satisfied With Life 1`, levels = c("Strongly agree", "Agree", "Slightly agree", "Neither agree or disagree","Slightly disagree", "Disagree", "Strongly disagree"))
+
+# %>% filter(`Yes/No` == 'Yes')
+# rows = vars(Yes/No), cols = vars(Gender)
+
+ggplot(plot6 %>% filter(`Yes/No` != 3)) +
+  geom_bar(aes(x = Relationship, 
+               fill = `Satisfied With Life 1`),position = "dodge") +
+             facet_grid(`Yes/No` ~ Gender)
+
+```
+
+```{r}
+# Plot 7
+df7 <- data %>% drop_na('Psychiatrist', 'General Practitioner','Therapist/Counselor', 'Religious Leader', 
+                        'Weakness','Shame','Disappointment','Disclosure','Antidepressants', 'Age')
+df7 <- apply(df7, 2, find_and_encode)
+df7 <- as.data.frame(df7)
+
+df7 <- df7 %>% 
+  mutate(
+    # Create categories
+    Age_Group = dplyr::case_when(
+      Age <= 25            ~ "18-25",
+      Age > 25 & Age <= 50 ~ "26-50",
+      Age > 50 & Age <= 75 ~ "51-75",
+      Age > 75             ~ "> 75"
+    ),
+    # Convert to factor
+    Age_Group = factor(
+      Age_Group,
+      level = c("18-25", "26-50","51-75", "> 75")
+    )
+  )
+
+cols7a <- c('Psychiatrist', 'General Practitioner','Therapist/Counselor', 'Religious Leader')
+cols7b <- c('Weakness','Shame','Disappointment','Disclosure','Antidepressants')
+
+
+plot7 <- pivot_longer(df7, cols = cols7a, names_to = "Available Mental Health Services" , values_to = "MHS Yes/No")
+plot7 <- pivot_longer(plot7, cols = cols7b, names_to = "Prevailing Mental Issues" , values_to = "MI Yes/No")
+
+plot7 <- plot7 %>% filter(`MHS Yes/No` == 1 & `MI Yes/No` == 1)
+
+counts7 <- plot7[c("Age_Group", "Prevailing Mental Issues", "Available Mental Health Services")] %>% group_by(`Age_Group`, `Prevailing Mental Issues`, `Available Mental Health Services`) %>% 
+  summarise(Freq = n()) %>% 
+  ungroup() %>% 
+  complete(`Age_Group`, `Prevailing Mental Issues`, `Available Mental Health Services`, fill = list(Freq = 0))
+
+names(counts7) <- c("Age_Group", "Prevailing Mental Issues", "Available Mental Health Services", "Freq")
+
+counts7$Age_Group = factor(counts7$Age_Group, levels = c("18-25", "26-50", "51-75", "> 75"))
+
+ggplot(counts7, aes(axis1 = Age_Group, axis2 = `Prevailing Mental Issues`, axis3 = `Available Mental Health Services`, y = Freq)) +
+  geom_alluvium(aes(fill = Age_Group), color='black') +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = paste(after_stat(stratum), "\n", after_stat(count)))) + scale_x_discrete(limits = c("Age_Group","Prevailing Mental Issues", "Available Mental Health Services"))
+  
+
+```
+
+```{r, fig.width=8, fig.height=3}
+# Plot 8
+df8 <- data %>% drop_na("English Speaking", "Familiarity with America","Discrimination")
+
+df8$English_Speaking_Rating[df8$`English Speaking` == "Not at all"] <- 1
+df8$English_Speaking_Rating[df8$`English Speaking` == "Not well"] <- 2
+df8$English_Speaking_Rating[df8$`English Speaking` == "Well"] <- 3
+df8$English_Speaking_Rating[df8$`English Speaking` == "Very well"] <- 4
+
+df8$Familiarity_with_America_Rating[df8$`Familiarity with America` == "Very low"] <- 1
+df8$Familiarity_with_America_Rating[df8$`Familiarity with America` == "Low"] <- 2
+df8$Familiarity_with_America_Rating[df8$`Familiarity with America` == "High"] <- 3
+df8$Familiarity_with_America_Rating[df8$`Familiarity with America` == "Very high"] <- 4
+
+df8$English_Speaking_Rating = df8$`English Speaking`
+df8$Familiarity_with_America_Rating = df8$`Familiarity with America`
+
+
+
+cols8 <- c("English Speaking", "Familiarity with America")
+
+# plot8 <- pivot_longer(df8, cols = cols8, names_to = "" , values_to = "")
+
+counts8 <- df8[c("English_Speaking_Rating", "Familiarity_with_America_Rating","Discrimination")] %>% group_by(`English_Speaking_Rating`, `Familiarity_with_America_Rating`,`Discrimination`) %>% 
+  summarise(Freq = n()) %>% 
+  ungroup() %>% 
+  complete(`English_Speaking_Rating`, `Familiarity_with_America_Rating`,`Discrimination`, fill = list(Freq = 0))
+
+names(counts8) <- c("English_Speaking", "Familiarity_with_America","Discrimination", "Freq")
+
+counts8$`English_Speaking` = factor(counts8$`English_Speaking`, levels = c("Not at all", "Not well", "Well", "Very well"))
+counts8$`Familiarity_with_America` = factor(counts8$`Familiarity_with_America`, levels = c("Very low", "Low", "High", "Very high"))
+
+mosaic(Discrimination ~  English_Speaking + Familiarity_with_America , data = counts8, direction = c("v", "v", "h"),
+       labeling_args = list(rot_labels = c(00, 90, 90, 90)),
+       labeling = labeling_border(abbreviate_labs = c(FALSE, 3, FALSE)))
+
+```
+```{r}
+# Plot 9
+
+df9 <- data.frame(data, check.names=FALSE)
+
+cols9 = c('Hypertension',	'Heart Disease',	'Stroke',	'Diabetes',	'Cancer',	'Arthritis', 'Hepatitis',	'Kidney Problem',	'Asthma',	'COPD')
+
+df9$`Heart Disease` <- as.character((df9$`Heart Disease`))
+df9$`Stroke` <- as.character((df9$`Stroke`))
+df9$`Cancer` <- as.character((df9$`Cancer`))
+df9$`Hepatitis` <- as.character((df9$`Hepatitis`))
+df9$`Kidney Problem` <- as.character((df9$`Kidney Problem`))
+df9$`Asthma` <- as.character((df9$`Asthma`))
+df9$`COPD` <- as.character((df9$`COPD`))
+
+data_disease<-df9 %>% pivot_longer(cols=cols9, names_to='Disease',
+         values_to='Disease_exists',  values_drop_na = TRUE)
+
+
+data_disease <- subset(data_disease, Disease_exists != 0 )
+
+counts9 <- data_disease[c("Disease", "Health Insurance", "Physical Check-up")] %>% group_by(Disease, `Health Insurance`, `Physical Check-up`) %>% 
+  summarise(Freq = n()) %>% 
+  ungroup() %>% 
+  complete(Disease, `Health Insurance`, `Physical Check-up`, fill = list(Freq = 0))
+
+names(counts9) <- c("Disease", "Health Insurance", "Physical Check-up", "Freq")
+
+ggplot(counts9, aes(axis1 = Disease, axis2 = `Health Insurance`, axis3 = `Physical Check-up`, y = Freq)) +
+  geom_alluvium(aes(fill=Disease)) +
+  geom_stratum() +   
+  geom_text(stat = "stratum", aes(label = paste(after_stat(stratum), "\n", after_stat(count)))) + scale_x_discrete(limits = c("Disease", "Health Insurance", "Physical Check-up"))
+
+
+```
+
+
+```{r, fig.width=5, fig.height=2}
+# Plot 10
+df10 <- data %>% drop_na("Ethnicity", "Duration of Residency", "Status of Ownership")
+df10 <- subset(df10, `Status of Ownership` != 3)
+ggplot(df10, aes(x = `Duration of Residency`, y = factor(Ethnicity, levels=c("Vietnamese","Korean","Asian Indian","Other","Filipino","Chinese")))) +
+  geom_point(size = 3, aes(colour = `Status of Ownership`)) +  # Use a larger dot
+  theme_bw() +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.y = element_line(colour = "grey60", linetype = "dashed")
+  ) +
+  ylab("Ethnicity") 
+
+```
+
+```{r}
+# Preparing data for d3 plot
+
+d3_data <- data.frame(data, check.names = FALSE)
+
+d3_data <- d3_data %>% drop_na("Quality of Life", "Duration of Residency", "Ethnicity", ) %>% 
+  mutate(
+    # Create categories
+    `Quality_of_Life` = dplyr::case_when(
+      `Quality of Life` <= 3            ~ "Poor",
+      `Quality of Life` > 3 & `Quality of Life` <= 6 ~ "Fair",
+      `Quality of Life` > 6  & `Quality of Life` < 9 ~ "Good",
+      `Quality of Life` >=9             ~ "Excellent"
+    ),
+    # Convert to factor
+    Quality_of_Life = factor(
+      Quality_of_Life,
+      level = c("Poor", "Fair","Good", "Excellent")
+    )
+  )
+
+d3_data <- d3_data %>% group_by(`Quality_of_Life`, Ethnicity) %>% mutate(Count = n()) %>% ungroup()
+d3_data <- d3_data[c("Duration of Residency", "Quality_of_Life", "Ethnicity", "Count")]
+names(d3_data) <- c("Duration_of_Residency", "Quality_of_Life", "Ethnicity", "Count")
+d3_data$Quality_of_Life <- factor(d3_data$Quality_of_Life, levels = c("Poor", "Fair", "Good", "Excellent"))
+d3_data$Duration_of_Residency <- round(d3_data$Duration_of_Residency)
+
+write.csv(d3_data, "/Users/gokul/Desktop/data.csv", row.names = FALSE )
+
+```
+
+
+
