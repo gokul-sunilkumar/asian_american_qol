@@ -1,7 +1,8 @@
 # Results
+
 ```{r}
 knitr::opts_chunk$set(
-  comment = "#>", echo = FALSE, fig.width = 10, fig.height = 10)
+  comment = "#>", echo = FALSE, fig.width = 5, fig.height = 4)
 ```
 
 ```{r}
@@ -13,6 +14,9 @@ library(extracat)
 library(GGally)
 library(ggalluvial)
 library(scales)
+library(dplyr)
+library(gridExtra)
+library(naniar)
 ```
 
 ```{r}
@@ -162,16 +166,18 @@ unique_df_encoded2$Age_Group <- factor(unique_df_encoded2$Age_Group,
 
 ggplot(unique_df_encoded2, aes(Ethnicity)) + geom_bar(aes(fill=Age_Group), position = position_fill(reverse = TRUE)) + scale_y_continuous(labels=scales::percent)+ labs(y="Percentage distribution", x="Ethnicity", title = "Overall age distribution of various ethnic groups")+  scale_fill_viridis_d()+ guides(fill = guide_legend(reverse = TRUE))
 ```
+
 The stacked bar chart serves as an illustration of how to comprehend the distribution of people from various ethnicities in various age groups. The majority of people in the 18–25 age bracket are Chinese and Filipino. In the 25–50 age range, Asian Indians make up the majority. In the age range of 51 - 75, the Vietnamese have a substantial population. Koreans often occupy the most space among those who are older than 75. As was seen in the previous graph, it is clear from this one as well that there are the most immigrants in the 25–50 age range.
 
 ## Plot 3
-```{r}
+```{r, fig.width = 6, fig.height = 4}
 # Plot 3
 df3 <- data %>% drop_na("Duration of Residency", "Income", "Occupation", "US Born")
 df3 <- subset(df3, Occupation != 0)
 df3$`Duration of Residency` <- as.numeric((df3$`Duration of Residency`))
 ggplot(df3, aes(x= `Duration of Residency`, y=Income, color=Occupation)) + geom_point() + facet_grid(~ `US Born`)+ggtitle("Distribution of income for diferent occupations based on US born and duration of residency")
 ```
+
 The level of income earned by different occupations has a significant impact on living quality. Given that the majority of the survey respondents are non-natives, two key criteria that may affect someone in this salary category are whether or not they were born in the US and how long they have been there. An obvious observation is that there are a greater number of people who aren’t US born and the minimum number of years for residency for a US-born is 15 years. The percentage of US citizens with salaries of $70,000 or more is higher among those who were born there, and they also tend to have more years of residency on average than non-citizens.
 Business owners and professionals typically earn the greatest salaries among abroad born. Those who work as managers, executives & officials, and business owners make the greatest salaries among non-US citizens.
 
@@ -240,6 +246,7 @@ plot4_summary_diverging_right_order %>%
         legend.position = "top")
 
 ```
+
 It is crucial to evaluate whether Austin, Texas—in particular—is a decent place to live based on several living characteristics if one is thinking about moving there. The following factors are taken into account in the graph across all age groups: a place to live, a place to raise children, a place to work, small businesses, a place to retire, a place for arts and culture, safety, and traffic. This figure uses a diverging stacked bar chart because it clearly distinguishes between the good and the bad side.
 The first observation is that most people consider Austin, Texas to be a good place to live based on the fact that maximum number of people are among the good region. 
 
@@ -338,6 +345,7 @@ ggplot(counts7, aes(axis1 = Age_Group, axis2 = `Prevailing Mental Issues`, axis3
   
 
 ```
+
 A decent place to live and a high quality of life are frequently also characterized by the amenities that are easily accessible to the populace. To lead a life, it is important for people of all ages to be mentally healthy and at peace. Since many people experience mental pressure and need some direction, such facilities were examined in the alluvial plot. The analysis is carried out to determine the prevalence of each type of mental illness among people and the services that are sought by those individuals.
 
 The majority of people between the ages of 25-50 and 51-75 have mental health disorders, with depression being the most common problem, followed by weakness and problems disclosing their condition. Most people who experience weakness are in the 25–50 age range. The majority of people who experience any metal health concern look for a general practitioner's help. Most respondents in the age range between 18-25 do not seek religious help and those in the 25–50 & 51–75 age ranges are more likely to seek religious therapies.
@@ -427,7 +435,7 @@ Plot 9 examines current illnesses, insurance coverage, and physical examinations
 The majority of responders have problems with hypertension, and it is evident that almost all of them have insurance, allowing utilizing the services offered. Only a tiny minority of those with insurance do not consider physical check-up, yet the majority regularly check their health. Half of individuals without insurance choose to undergo a physical examination, and half do not.
 
 ## Plot 10
-```{r, fig.width=5, fig.height=2}
+```{r, fig.width = 6, fig.height = 4}
 # Plot 10
 df10 <- data %>% drop_na("Ethnicity", "Duration of Residency", "Status of Ownership")
 df10 <- subset(df10, `Status of Ownership` != 3)
