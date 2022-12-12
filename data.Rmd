@@ -1,7 +1,7 @@
 # Data
 
-```{r}
-library(tidyr)
+```{r load-packages, include=FALSE}
+library(tidyverse)
 library(gridExtra)
 library(naniar)
 ```
@@ -21,27 +21,26 @@ Some attributes were also translated from categorical to numerical values for gr
 
 Since it is a survey, some respondents choose not to respond to questions they were uncomfortable answering, which causes a number of missing values in the data (NA). Nearly every row contained some missing values, and if they were excluded from the analysis, there would be no data. 
 
-
-```{r}
-library(tidyr)
-library(gridExtra)
-library(naniar)
-
-# Plot 1
+```{r, eval=FALSE}
 missing.values <- data %>%
-  gather(key = "key", value = "val") %>%
-  mutate(isna = is.na(val)) %>%
+  tidyr::gather(key = "key", value = "val") %>%
+  dplyr::mutate(isna = is.na(val)) %>%
   group_by(key) %>%
   mutate(total = n()) %>%
   group_by(key, total, isna) %>%
   summarise(num.isna = n()) %>%
   mutate(pct = num.isna / total * 100)
+```
+
+
+```{r}
+missing.values <- read.csv("/Users/gokul/Documents/R Programs/asian_american_qol/data/missing.csv")
 
 
 levels <-
-    (missing.values  %>% filter(isna == T, pct>4) %>% arrange(desc(pct)))$key
+    (missing.values  %>% dplyr::filter(isna == T, pct>4) %>% arrange(desc(pct)))$key
 
-percentage.plot <- missing.values %>% filter(key %in% levels) %>% 
+percentage.plot <- missing.values %>% dplyr::filter(key %in% levels) %>% 
       ggplot() +
         geom_bar(aes(x = reorder(key, desc(pct)), 
                      y = pct, fill=isna), 
@@ -60,9 +59,10 @@ The percentage of missing values in the data, those columns having more than 100
 
 ```{r}
 # Plot 2
+data <- read_csv(here::here("data", "data.csv"))
 row.plot <- data[levels] %>%  
-  mutate(id = row_number()) %>%
-  gather(-id, key = "key", value = "val") %>%
+  dplyr::mutate(id = row_number()) %>%
+  tidyr::gather(-id, key = "key", value = "val") %>%
   mutate(isna = is.na(val)) %>%
   ggplot(aes(key, id, fill = isna)) +
     geom_raster(alpha=0.8) +
@@ -73,6 +73,7 @@ row.plot <- data[levels] %>%
     labs(x = "Feature",
            y = "Row Number", title = "Missing values in rows") +
     coord_flip()
+
 
 row.plot
 

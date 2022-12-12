@@ -5,7 +5,7 @@ knitr::opts_chunk$set(
   comment = "#>", echo = FALSE, fig.width = 5, fig.height = 4)
 ```
 
-```{r}
+```{r load-packages}
 library(tidyverse)
 library(skimr)
 library(corrplot)
