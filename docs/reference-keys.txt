@@ -7,20 +7,6 @@ sources
 cleaning-transformation
 missing-value-analysis
 results
-interactive-component
-conclusion
-tab:unnamed-chunk-5
-data-1
-plot-1
-plot-2
-plot-3
-plot-4
-plot-5
-plot-6
-plot-7
-plot-8
-plot-9
-plot-10
 does-the-people-who-we-are-living-with-have-something-to-do-with-our-mental-health
 is-the-survey-unbiased-within-each-ethnicity-are-people-of-all-age-brackets-covered
 does-the-duration-of-residency-in-the-us-have-any-impact-on-peoples-income
@@ -31,3 +17,5 @@ are-people-really-discriminated-based-on-their-familiarity-with-america-and-thei
 does-a-diseased-person-opt-for-health-insurance-in-order-to-undergo-a-physical-checkup
 do-people-prefer-to-own-a-house-as-they-consider-living-in-the-us-for-a-longer-amount-of-time
 how-good-is-austin-to-live-based-on-different-living-criteria
+interactive-component
+conclusion
