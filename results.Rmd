@@ -184,7 +184,7 @@ ggplot(df3, aes(x= `Duration of Residency`, y=Income, color=Occupation)) + geom_
 The level of income earned by different occupations has a significant impact on living quality. Given that the majority of the survey respondents are non-natives, two key criteria that may affect someone in this salary category are whether or not they were born in the US and how long they have been there. An obvious observation is that there are a greater number of people who aren’t US born and the minimum number of years for residency for a US-born is 15 years. The percentage of US citizens with salaries of $70,000 or more is higher among those who were born there, and they also tend to have more years of residency on average than non-citizens.
 Business owners and professionals typically earn the greatest salaries among abroad born. Those who work as managers, executives & officials, and business owners make the greatest salaries among non-US citizens.
 
-## Plot 4
+## How good is Austin to live based on different living criteria?
 ```{r}
 # Plot 4
 cols4 <- c("Place to Live", "Raising Children", "Place to Work", "Small Businesses", "Place to Retire", 
@@ -239,9 +239,6 @@ plot4_summary_diverging_right_order %>%
                       "Good" = "deepskyblue",
                       "Excellent" = "deepskyblue4"
                     )) +
-  labs(title = "How good is Austin to live based on different living criteria?",
-       x = NULL,
-       fill = NULL) +
   theme_minimal() +
   theme(axis.text.x = element_blank(),
         axis.title.x = element_blank(),
