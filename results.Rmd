@@ -149,7 +149,8 @@ counts1$Age_Group = factor(counts1$Age_Group, levels = c("18-25", "26-50", "51-7
 counts1$PresentMentalHealth = factor(counts1$PresentMentalHealth, levels = c("Fair", "Good", "Very Good", "Excellent"))
 mosaic(PresentMentalHealth ~ Age_Group + living_with , data = counts1, direction = c("v", "v", "h"),
        labeling_args = list(rot_labels = c(0, 90, 90, 0)),
-       labeling = labeling_border(abbreviate_labs = c(FALSE, 3, FALSE)))
+       labeling = labeling_border(abbreviate_labs = c(FALSE, 3, FALSE)),
+       main = "Age Group v/s People Living with v/s Present Mental Health")
 
 
 ```
@@ -178,7 +179,7 @@ The stacked bar chart serves as an illustration of how to comprehend the distrib
 df3 <- data %>% drop_na("Duration of Residency", "Income", "Occupation", "US Born")
 df3 <- subset(df3, Occupation != 0)
 df3$`Duration of Residency` <- as.numeric((df3$`Duration of Residency`))
-ggplot(df3, aes(x= `Duration of Residency`, y=Income, color=Occupation)) + geom_point() + facet_grid(~ `US Born`)+ggtitle("Distribution of income for diferent occupations based on US born and duration of residency")
+ggplot(df3, aes(x= `Duration of Residency`, y=Income, color=Occupation)) + geom_point() + facet_grid(~ `US Born`)+ggtitle("Income v/s Occupation v/s Duration of Residency")
 ```
 
 The level of income earned by different occupations has a significant impact on living quality. Given that the majority of the survey respondents are non-natives, two key criteria that may affect someone in this salary category are whether or not they were born in the US and how long they have been there. An obvious observation is that there are a greater number of people who aren’t US born and the minimum number of years for residency for a US-born is 15 years. The percentage of US citizens with salaries of $70,000 or more is higher among those who were born there, and they also tend to have more years of residency on average than non-citizens.
@@ -224,6 +225,7 @@ plot4_summary_diverging_right_order %>%
   ggplot(aes(x = Living_Criteria, 
              y = percent_rating,
              fill = Rating)) +
+  xlab("Living criteria") +
   geom_col() +
   geom_text(aes(label = percent_rating_label),
             position = position_stack(vjust = 0.5),
@@ -289,7 +291,9 @@ plot6$`Satisfied With Life 1` <- factor(plot6$`Satisfied With Life 1`, levels = 
 ggplot(plot6 %>% filter(`Yes/No` != 3)) +
   geom_bar(aes(x = Relationship, 
                fill = `Satisfied With Life 1`),position = "dodge") +
-             facet_grid(`Yes/No` ~ Gender)
+             facet_grid(`Yes/No` ~ Gender) +
+  labs(title = "Gender v/s Is Close Blood Relation v/s Relationship v/s Satisfiability with life") +
+  scale_fill_brewer(palette = "Set1")
 
 ```
 Human satisfaction is largely derived from relationships with family, friends, and acquaintances rather than purely worldly things. It makes more sense to have a plot where the residents' level of life happiness is determined on whether or not they have family, friends, and acquaintances. 
@@ -344,7 +348,8 @@ counts7$Age_Group = factor(counts7$Age_Group, levels = c("18-25", "26-50", "51-7
 ggplot(counts7, aes(axis1 = Age_Group, axis2 = `Prevailing Mental Issues`, axis3 = `Available Mental Health Services`, y = Freq)) +
   geom_alluvium(aes(fill = Age_Group), color='black') +
   geom_stratum() +
-  geom_text(stat = "stratum", aes(label = paste(after_stat(stratum), "\n", after_stat(count)))) + scale_x_discrete(limits = c("Age_Group","Prevailing Mental Issues", "Available Mental Health Services"))
+  geom_text(stat = "stratum", aes(label = paste(after_stat(stratum), "\n", after_stat(count)))) + scale_x_discrete(limits = c("Age_Group","Prevailing Mental Issues", "Available Mental Health Services")) +
+  labs(y = "Frequency")
   
 
 ```
@@ -390,7 +395,8 @@ counts8$`Familiarity_with_America` = factor(counts8$`Familiarity_with_America`, 
 
 mosaic(Discrimination ~  English_Speaking + Familiarity_with_America , data = counts8, direction = c("v", "v", "h"),
        labeling_args = list(rot_labels = c(00, 90, 90, 90)),
-       labeling = labeling_border(abbreviate_labs = c(FALSE, 3, FALSE)))
+       labeling = labeling_border(abbreviate_labs = c(FALSE, 3, FALSE)),
+       main = "Discrimination v/s Familiarity with America & English Speaking")
 
 ```
 Discrimination occurs everywhere, and the fact that the respondents are immigrants and frequently have little knowledge of the United States or its language makes it important to plot it and observe. Thus, analysis is done to determine whether knowledge of the language and familiarity with America can contribute to discrimination.
@@ -430,7 +436,8 @@ names(counts9) <- c("Disease", "Health Insurance", "Physical Check-up", "Freq")
 ggplot(counts9, aes(axis1 = Disease, axis2 = `Health Insurance`, axis3 = `Physical Check-up`, y = Freq)) +
   geom_alluvium(aes(fill=Disease)) +
   geom_stratum() +   
-  geom_text(stat = "stratum", aes(label = paste(after_stat(stratum), "\n", after_stat(count)))) + scale_x_discrete(limits = c("Disease", "Health Insurance", "Physical Check-up"))
+  geom_text(stat = "stratum", aes(label = paste(after_stat(stratum), "\n", after_stat(count)))) + scale_x_discrete(limits = c("Disease", "Health Insurance", "Physical Check-up")) +
+  labs(y = "Frequency")
 
 
 ```
@@ -453,7 +460,7 @@ ggplot(df10, aes(x = `Duration of Residency`, y = factor(Ethnicity, levels=c("Vi
     panel.grid.minor.x = element_blank(),
     panel.grid.major.y = element_line(colour = "grey60", linetype = "dashed")
   ) +
-  ylab("Ethnicity") 
+  ylab("Ethnicity") + ggtitle("Ethicity v/s Duration of Residency v/s Status of Ownership")
 
 ```
 
